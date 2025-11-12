@@ -11,6 +11,9 @@ import Admin from "./pages/Admin";
 import CallAgent from "./pages/CallAgent";
 import ReferralGenerator from "./pages/ReferralGenerator";
 import Affiliate from "./pages/Affiliate";
+import AffiliateClicks from "./pages/AffiliateClicks";
+import AffiliateConversions from "./pages/AffiliateConversions";
+import AffiliatePayouts from "./pages/AffiliatePayouts";
 import Promoter from "./pages/Promoter";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +34,9 @@ const App = () => (
           <Route path="/agent" element={<CallAgent />} />
           <Route path="/referrals" element={<ReferralGenerator />} />
           <Route path="/affiliate" element={<Affiliate />} />
+          <Route path="/affiliate/clicks" element={<AffiliateClicks />} />
+          <Route path="/affiliate/conversions" element={<AffiliateConversions />} />
+          <Route path="/affiliate/payouts" element={<AffiliatePayouts />} />
           <Route path="/promoter" element={<Promoter />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

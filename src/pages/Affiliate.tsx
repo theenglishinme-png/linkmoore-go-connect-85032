@@ -8,13 +8,19 @@ import {
   ShoppingBag,
   ArrowRight,
   RefreshCw,
-  Store
+  Store,
+  Target,
+  CheckCircle2
 } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
+import { AffiliateNav } from "@/components/AffiliateNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { api, Offer } from "@/lib/api";
+import { StatsCard } from "@/components/StatsCard";
+import { ChartWidget } from "@/components/ChartWidget";
+import { DataTable } from "@/components/DataTable";
+import { api, Offer, Referral } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 const Affiliate = () => {
@@ -27,6 +33,7 @@ const Affiliate = () => {
     totalReferrals: 0,
   });
   const [topOffers, setTopOffers] = useState<Offer[]>([]);
+  const [recentReferrals, setRecentReferrals] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,13 +42,15 @@ const Affiliate = () => {
 
   const loadDashboardData = async () => {
     try {
-      const [affiliateStats, offers] = await Promise.all([
+      const [affiliateStats, offers, referrals] = await Promise.all([
         api.affiliate.getStats("aff-1"),
-        api.offers.getApproved()
+        api.offers.getApproved(),
+        api.affiliate.getReferrals("aff-1")
       ]);
       
       setStats(affiliateStats);
-      setTopOffers(offers.slice(0, 3)); // Top 3 offers
+      setTopOffers(offers.slice(0, 3));
+      setRecentReferrals(referrals.slice(0, 5));
       setLoading(false);
     } catch (error) {
       toast({
@@ -52,6 +61,69 @@ const Affiliate = () => {
       setLoading(false);
     }
   };
+
+  // Mock chart data
+  const performanceData = [
+    { date: "Mon", clicks: 45, conversions: 12 },
+    { date: "Tue", clicks: 52, conversions: 15 },
+    { date: "Wed", clicks: 38, conversions: 9 },
+    { date: "Thu", clicks: 67, conversions: 18 },
+    { date: "Fri", clicks: 71, conversions: 22 },
+    { date: "Sat", clicks: 55, conversions: 14 },
+    { date: "Sun", clicks: 48, conversions: 11 },
+  ];
+
+  const commissionData = [
+    { name: "Approved", value: stats.totalEarnings, fill: "hsl(var(--success))" },
+    { name: "Pending", value: 320.50, fill: "hsl(var(--accent))" },
+    { name: "Processing", value: 150.25, fill: "hsl(var(--primary))" },
+  ];
+
+  const referralColumns = [
+    {
+      key: "offerName",
+      label: "Offer",
+      render: (ref: Referral) => (
+        <div>
+          <p className="font-medium text-foreground">{ref.offerName}</p>
+          <p className="text-xs text-muted-foreground">
+            {ref.clickDate.toLocaleDateString()}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (ref: Referral) => (
+        <Badge
+          variant={
+            ref.status === "APPROVED"
+              ? "default"
+              : ref.status === "PENDING"
+              ? "secondary"
+              : "destructive"
+          }
+          className={
+            ref.status === "APPROVED"
+              ? "bg-success text-success-foreground"
+              : ""
+          }
+        >
+          {ref.status}
+        </Badge>
+      ),
+    },
+    {
+      key: "commission",
+      label: "Commission",
+      render: (ref: Referral) => (
+        <span className="font-semibold text-foreground">
+          {ref.commission.toFixed(2)} MZN
+        </span>
+      ),
+    },
+  ];
 
   const handleViewMarketplace = () => {
     navigate("/referrals");
@@ -91,49 +163,53 @@ const Affiliate = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Navigation Tabs */}
+        <AffiliateNav />
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <DollarSign className="w-5 h-5 text-success" />
-              </div>
-              <p className="text-2xl font-bold text-foreground">
-                {stats.totalEarnings.toFixed(2)}
-              </p>
-              <p className="text-xs text-muted-foreground">Total Earnings (MZN)</p>
-            </CardContent>
-          </Card>
+          <StatsCard
+            title="Total Earnings (MZN)"
+            value={stats.totalEarnings.toFixed(2)}
+            icon={DollarSign}
+            iconColor="text-success"
+          />
+          <StatsCard
+            title="Total Clicks"
+            value={stats.totalClicks}
+            icon={MousePointerClick}
+            iconColor="text-primary"
+          />
+          <StatsCard
+            title="Total Conversions"
+            value={stats.totalLeads}
+            icon={CheckCircle2}
+            iconColor="text-accent"
+          />
+          <StatsCard
+            title="Conversion Rate"
+            value={`${((stats.totalLeads / stats.totalClicks) * 100 || 0).toFixed(1)}%`}
+            icon={Target}
+            iconColor="text-success"
+          />
+        </div>
 
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <MousePointerClick className="w-5 h-5 text-primary" />
-              </div>
-              <p className="text-2xl font-bold text-foreground">{stats.totalClicks}</p>
-              <p className="text-xs text-muted-foreground">Total Clicks</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <Users className="w-5 h-5 text-accent" />
-              </div>
-              <p className="text-2xl font-bold text-foreground">{stats.totalLeads}</p>
-              <p className="text-xs text-muted-foreground">Total Leads</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <TrendingUp className="w-5 h-5 text-success" />
-              </div>
-              <p className="text-2xl font-bold text-foreground">{stats.totalReferrals}</p>
-              <p className="text-xs text-muted-foreground">Referrals</p>
-            </CardContent>
-          </Card>
+        {/* Charts Section */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <ChartWidget
+            title="Performance Over Time"
+            type="line"
+            data={performanceData}
+            dataKeys={{ x: "date", y: ["clicks", "conversions"] }}
+            colors={["hsl(var(--primary))", "hsl(var(--success))"]}
+          />
+          <ChartWidget
+            title="Commission Distribution"
+            type="pie"
+            data={commissionData}
+            dataKeys={{ name: "name", value: "value" }}
+            height={300}
+          />
         </div>
 
         {/* Quick Actions */}
@@ -144,7 +220,7 @@ const Affiliate = () => {
               Quick Actions
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3">
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Button
               variant="default"
               className="w-full"
@@ -156,67 +232,105 @@ const Affiliate = () => {
             <Button
               variant="outline"
               className="w-full"
-              onClick={handleViewReferrals}
+              onClick={() => navigate("/affiliate/clicks")}
+            >
+              <MousePointerClick className="w-4 h-4 mr-2" />
+              View Clicks
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate("/affiliate/conversions")}
             >
               <TrendingUp className="w-4 h-4 mr-2" />
-              My Referrals
+              Conversions
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate("/affiliate/payouts")}
+            >
+              <DollarSign className="w-4 h-4 mr-2" />
+              Payouts
             </Button>
           </CardContent>
         </Card>
 
-        {/* Top Offers */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Top Converting Offers</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleViewMarketplace}
-              >
-                View All
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {topOffers.map((offer) => (
-              <Card
-                key={offer.id}
-                className="cursor-pointer hover:shadow-hover transition-all border"
-                onClick={() => navigate(`/referrals`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-foreground mb-1">{offer.name}</h4>
-                      <p className="text-xs text-muted-foreground mb-2">{offer.vendorName}</p>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {offer.description}
-                      </p>
+        {/* Recent Activity and Top Offers */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Recent Referrals */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Recent Referrals</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleViewReferrals}
+                >
+                  View All
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                data={recentReferrals}
+                columns={referralColumns}
+                pageSize={5}
+                emptyMessage="No referrals yet. Start promoting offers!"
+              />
+            </CardContent>
+          </Card>
+
+          {/* Top Offers */}
+          <Card className="shadow-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Top Converting Offers</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleViewMarketplace}
+                >
+                  View All
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {topOffers.map((offer) => (
+                <Card
+                  key={offer.id}
+                  className="cursor-pointer hover:shadow-hover transition-all border"
+                  onClick={() => navigate(`/referrals`)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground mb-1">{offer.name}</h4>
+                        <p className="text-xs text-muted-foreground mb-2">{offer.vendorName}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap mt-3">
-                    <Badge variant="outline" className="text-xs">
-                      {offer.salesCount} Sales
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {offer.epc.toFixed(2)} MZN EPC
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {offer.conversionRate.toFixed(1)}% CR
-                    </Badge>
-                    <Badge className="bg-success text-success-foreground text-xs">
-                      {offer.commission.type === "PERCENTAGE"
-                        ? `${offer.commission.value}% Commission`
-                        : `${offer.commission.value} MZN`}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </CardContent>
-        </Card>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="text-xs">
+                        {offer.salesCount} Sales
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {offer.conversionRate.toFixed(1)}% CR
+                      </Badge>
+                      <Badge className="bg-success text-success-foreground text-xs">
+                        {offer.commission.type === "PERCENTAGE"
+                          ? `${offer.commission.value}%`
+                          : `${offer.commission.value} MZN`}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </main>
 
       <BottomNav />
