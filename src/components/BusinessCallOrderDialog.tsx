@@ -250,7 +250,7 @@ export const BusinessCallOrderDialog = ({
             )}
 
             {/* Products/Services Menu */}
-            {!orderPlaced && (
+            {!orderPlaced && (mode === "order" || isInCall) && (
               <>
                 <Separator />
                 <div className="space-y-3">
